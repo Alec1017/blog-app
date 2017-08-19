@@ -4,9 +4,16 @@ from flask import Flask, render_template
 app = Flask(__name__)
 
 
+# Renders the home page
 @app.route('/')
 def index():
     return render_template('home.html')
+
+
+# Renders the about page
+@app.route('/about')
+def about():
+    return render_template('about.html')
 
 
 # Run the application
