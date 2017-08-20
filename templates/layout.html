@@ -8,8 +8,11 @@
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     </head>
     <body>
+        <!-- add the navbar -->
         {% include 'includes/_navbar.html' %}
         <div class="container">
+            <!-- allows messages to be displayed -->
+            {% include 'includes/_messages.html' %}
             {% block body %}{% endblock %}
         </div>
 
