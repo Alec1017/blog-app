@@ -4,8 +4,11 @@ from flask_mysqldb import MySQL
 from forms import RegisterForm
 from passlib.hash import sha256_crypt
 
-# Create instance of flask class.
+# Create instance of flask class
 app = Flask(__name__)
+
+# Config secret key
+app.secret_key = '123456'
 
 # Config MySQL
 app.config['MYSQL_HOST'] = 'localhost'
@@ -13,9 +16,6 @@ app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'password'
 app.config['MYSQL_DB'] = 'blogapp'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
-
-# Config secret key
-app.secret_key = '123456'
 
 # Init MYSQL
 mysql = MySQL(app)
