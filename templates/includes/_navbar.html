@@ -23,8 +23,15 @@
 
             <!-- right side of the navbar -->
             <ul class="nav navbar-nav navbar-right">
+                <!-- only display the logout button if session is logged in -->
+                {% if session.logged_in %}
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/logout">Logout</a></li>
+                {% else %}
                 <li><a href="/login">Login</a></li>
                 <li><a href="/register">Register</a></li>
+                {% endif %}
+
             </ul>
         </div>
 

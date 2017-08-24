@@ -1,8 +1,10 @@
-from flask import Flask, render_template, flash, redirect, url_for, session, request, logging
+from flask import Flask, flash, redirect, url_for, request, render_template, session, logging
 from data import Blog_posts
 from flask_mysqldb import MySQL
 from forms import RegisterForm
 from passlib.hash import sha256_crypt
+from functools import wraps
+
 
 # Create instance of flask class
 app = Flask(__name__)
@@ -10,7 +12,7 @@ app = Flask(__name__)
 # Config MySQL
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'password'
+app.config['MYSQL_PASSWORD'] = 'password'  # MySQL root password
 app.config['MYSQL_DB'] = 'blogapp'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
@@ -59,6 +61,7 @@ def register():
     # If the request method is POST and all fields are filled out
     if request.method == 'POST' and form.validate():
         name = form.name.data
+        # TODO: encrypt email address?
         email = form.email.data
         username = form.username.data
         # Encrypt the password
@@ -106,13 +109,61 @@ def login():
             # Search for the encrypted password
             password = data['password']
 
+            # Close connection
+            cur.close()
+
             # Compare passwords
             if sha256_crypt.verify(password_candidate, password):
-                app.logger.info('PASSWORD MATCHED')
+                # Passwords matched - Successfull login
+                # Create session variables to be stored
+                session['logged_in'] = True
+                session['username'] = username
+
+                flash('You are now logged in', 'success')
+                return redirect(url_for('dashboard'))
+            else:
+                error = 'Invalid login'
+                return render_template('login.html', error=error)
         else:
-            app.logger.info('NO USER FOUND')
+            # Close connection
+            cur.close()
+
+            # No user found
+            error = 'Username not found'
+            return render_template('login.html', error=error)
 
     return render_template('login.html')
+
+
+# Decorator to check if user is logged in
+def is_logged_in(f):
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        if 'logged_in' in session:
+            return f(*args, **kwargs)
+        else:
+            flash('Please login', 'danger')
+            return redirect(url_for('login'))
+    return wrap
+
+
+# Logout the user
+# User can only access /login if logged in
+@app.route('/logout')
+@is_logged_in
+def logout():
+    # Clear the session variables
+    session.clear()
+    flash('You are now logged out', 'success')
+    return redirect(url_for('index'))
+
+
+# Renders the user dashboard page
+# User can only access /dashboard if logged in
+@app.route('/dashboard')
+@is_logged_in
+def dashboard():
+    return render_template('dashboard.html')
 
 
 # Run the application

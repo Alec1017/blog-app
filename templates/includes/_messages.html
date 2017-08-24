@@ -1,4 +1,4 @@
-<!-- displayes an alert message based on the category -->
+<!-- display an alert message upon redirect -->
 {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
         {% for category, message in messages %}
@@ -6,3 +6,13 @@
         {% endfor %}
     {% endif %}
 {% endwith %}
+
+<!-- Display error message -->
+{% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+<!-- Display non-error message -->
+{% if msg %}
+    <div class="alert alert-success">{{ msg }}</div>
+{% endif %}
