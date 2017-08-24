@@ -2,6 +2,7 @@ from wtforms import Form, StringField, TextAreaField, PasswordField, validators
 
 
 # A form for a user to register in the app
+# Uses validators to specify required data
 class RegisterForm(Form):
     # Name field
     name = StringField('Name', [
@@ -15,6 +16,7 @@ class RegisterForm(Form):
     # Password field
     password = PasswordField('Password', [
         validators.DataRequired(),
+        # Checks the password with the confirm field
         validators.EqualTo('confirm', message='Passwords do not match')
     ])
     # Confirm password field

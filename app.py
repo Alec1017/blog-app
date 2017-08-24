@@ -7,9 +7,6 @@ from passlib.hash import sha256_crypt
 # Create instance of flask class
 app = Flask(__name__)
 
-# Config secret key
-app.secret_key = '123456'
-
 # Config MySQL
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
@@ -17,7 +14,10 @@ app.config['MYSQL_PASSWORD'] = 'password'
 app.config['MYSQL_DB'] = 'blogapp'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
-# Init MYSQL
+# Config secret key
+app.secret_key = '123456'
+
+# Initialize MYSQL
 mysql = MySQL(app)
 
 # The dummy articles from data.py
@@ -48,11 +48,15 @@ def get_article(id):
     return render_template('article.html', id=id)
 
 
-# This a POST request to submit form
+# This a POST request to submit a register form
+# Redirects to login page after successful registration
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    # Create a register form variable
+    # Create a register form
+    # Uses forms.py
     form = RegisterForm(request.form)
+
+    # If the request method is POST and all fields are filled out
     if request.method == 'POST' and form.validate():
         name = form.name.data
         email = form.email.data
@@ -63,7 +67,7 @@ def register():
         # Create cursor (handler for mysql)
         cur = mysql.connection.cursor()
 
-        # Execute query
+        # Execute query (add form values to user in db)
         cur.execute("INSERT INTO users(name, email, username, password) VALUES(%s, %s, %s, %s)",
                     (name, email, username, password))
 
@@ -82,8 +86,32 @@ def register():
 # User login
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    # If the form is submitted as POST
     if request.method == 'POST':
-        return "hello"
+        # Get form fields (username and password)
+        username = request.form['username']
+        # We want correct password to be put in database
+        password_candidate = request.form['password']
+
+        # Create cursor
+        cur = mysql.connection.cursor()
+
+        # Get user by username
+        result = cur.execute("SELECT * FROM users WHERE username = %s", [username])
+
+        # If a user exists by that name
+        if result > 0:
+            # Get stored hash, searches query and looks at the first user
+            data = cur.fetchone()
+            # Search for the encrypted password
+            password = data['password']
+
+            # Compare passwords
+            if sha256_crypt.verify(password_candidate, password):
+                app.logger.info('PASSWORD MATCHED')
+        else:
+            app.logger.info('NO USER FOUND')
+
     return render_template('login.html')
 
 
