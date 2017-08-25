@@ -1,11 +1,8 @@
-from flask import Flask, flash, redirect, url_for, session, request, render_template, logging
+from flask import Flask, flash, redirect, url_for, session, request, render_template
 from flask_mysqldb import MySQL
 from forms import RegisterForm, ArticleForm
 from passlib.hash import sha256_crypt
 from functools import wraps
-
-# TODO: no two users can have the same username
-# TODO: make sure only the user's articles are on dashboard
 
 
 # Create instance of flask class
@@ -92,18 +89,33 @@ def register():
         # Create cursor (handler for mysql)
         cur = mysql.connection.cursor()
 
-        # Execute query (add form values to user in db)
-        cur.execute("INSERT INTO users(name, email, username, password) VALUES(%s, %s, %s, %s)",
-                    (name, email, username, password))
+        # Get any duplicate usernames or passwords
+        result = cur.execute(
+            "SELECT * FROM users WHERE email = %s OR username = %s", [email, username])
 
-        # Commit to DB
-        mysql.connection.commit()
+        # If a username or email exists in the database already
+        if result > 0:
+            # Commit to DB
+            mysql.connection.commit()
 
-        # Close connection
-        cur.close()
+            # Close connection
+            cur.close()
 
-        flash('You are now registered and can login', 'success')
-        return redirect(url_for('login'))
+            error = 'Username/Email already exists'
+            return render_template('register.html', form=form, error=error)
+        else:
+            # Execute query (add form values to user in db)
+            cur.execute("INSERT INTO users(name, email, username, password) VALUES(%s, %s, %s, %s)",
+                        (name, email, username, password))
+
+            # Commit to DB
+            mysql.connection.commit()
+
+            # Close connection
+            cur.close()
+
+            flash('You are now registered and can login', 'success')
+            return redirect(url_for('login'))
 
     # If something isn't entered correctly, reload page
     return render_template('register.html', form=form)
@@ -189,9 +201,8 @@ def dashboard():
     # Create cursor
     cur = mysql.connection.cursor()
 
-    # TODO: make sure dashboard articles are only written by the user
-    # Get user's articles from mysql
-    result = cur.execute("SELECT * FROM articles")
+    # Get only the user's articles from mysql
+    result = cur.execute("SELECT * FROM articles WHERE author = %s", [session["username"]])
 
     articles = cur.fetchall()
 
