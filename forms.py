@@ -21,3 +21,15 @@ class RegisterForm(Form):
     ])
     # Confirm password field
     confirm = PasswordField('Confirm Password')
+
+
+# A form for the user to create an article
+class ArticleForm(Form):
+    # Title field
+    title = StringField('Title', [
+        validators.Length(min=1, max=200)
+    ])
+    # Body field
+    body = TextAreaField('Body', [
+        validators.Length(min=30)
+    ])
