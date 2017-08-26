@@ -1,0 +1,13 @@
+<!-- Displays the article -->
+
+{% extends 'layout.html' %}
+
+{% block body %}
+    <h1>{{ article.title }}</h1>
+    <small>Written by {{ article.author }} on {{ article.create_date }}</small>
+    <hr>
+    <div>
+        <!-- "| safe" makes sure no html tags are displayed --> 
+        {{ article.body | safe }}
+    </div>
+{% endblock %}
