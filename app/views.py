@@ -2,7 +2,9 @@ from flask import flash, redirect, url_for, session, request, render_template
 from .forms import RegisterForm, ArticleForm
 from passlib.hash import sha256_crypt
 from functools import wraps
-from app import app
+
+from app import app, db
+from .models import User, Article
 
 
 # Renders the home page
@@ -20,19 +22,11 @@ def about():
 # Renders the articles page
 @app.route('/articles')
 def articles():
-    # Create cursor
-    cur = mysql.connection.cursor()
+    # Get all articles from the db
+    articles = Article.query.all()
 
-    # Get user's articles from mysql
-    result = cur.execute("SELECT * FROM articles")
-
-    articles = cur.fetchall()
-
-    # Close connection
-    cur.close()
-
-    # If there are articles in mysql
-    if result > 0:
+    # If there are articles in the db
+    if articles is not None:
         return render_template('articles.html', articles=articles)
     else:
         msg = 'No Articles Found'
@@ -42,15 +36,15 @@ def articles():
 # Renders a specific article
 @app.route('/article/<string:id>/')
 def get_article(id):
-    # Create cursor
-    cur = mysql.connection.cursor()
 
-    # Get article
-    cur.execute("SELECT * FROM articles WHERE id = %s", [id])
+    article = Article.query.filter_by(id=id).first()
 
-    article = cur.fetchone()
-
-    return render_template('article.html', article=article)
+    # If the article exists in the db
+    if article is not None:
+        return render_template('article.html', article=article)
+    else:
+        msg = 'No Article by that ID'
+        return render_template('articles.html', msg=msg)
 
 
 # This a POST request to submit a register form
@@ -63,40 +57,23 @@ def register():
 
     # If the request method is POST and all fields are filled out
     if request.method == 'POST' and form.validate():
-        name = form.name.data
-        email = form.email.data
-        username = form.username.data
-        # Encrypt the password
-        password = sha256_crypt.encrypt(str(form.password.data))
+        # Create new user object
+        user = User(name=form.name.data,
+                    email=form.email.data,
+                    username=form.username.data,
+                    password=sha256_crypt.encrypt(str(form.password.data)))  # Encrypt password
 
-        # Create cursor (handler for mysql)
-        cur = mysql.connection.cursor()
-
-        # Get any duplicate usernames or passwords
-        result = cur.execute(
-            "SELECT * FROM users WHERE email = %s OR username = %s", [email, username])
-
-        # If a username or email exists in the database already
-        if result > 0:
-            # Commit to DB
-            mysql.connection.commit()
-
-            # Close connection
-            cur.close()
-
-            error = 'Username/Email already exists'
+        # If the email already exists in the database
+        if User.query.filter_by(email=form.email.data).first() \
+                or User.query.filter_by(username=form.username.data).first() is not None:
+            error = 'username/Email already exists'
             return render_template('register.html', form=form, error=error)
         else:
-            # Execute query (add form values to user in db)
-            cur.execute("INSERT INTO users(name, email, username, password) VALUES(%s, %s, %s, %s)",
-                        (name, email, username, password))
+            # Add user to the database
+            db.session.add(user)
+            db.session.commit()
 
-            # Commit to DB
-            mysql.connection.commit()
-
-            # Close connection
-            cur.close()
-
+            # Redirect to the login page
             flash('You are now registered and can login', 'success')
             return redirect(url_for('login'))
 
@@ -114,25 +91,14 @@ def login():
         # We want correct password to be put in database
         password_candidate = request.form['password']
 
-        # Create cursor
-        cur = mysql.connection.cursor()
+        # Get specified user
+        user = User.query.filter_by(username=username).first()
 
-        # Get user by username
-        result = cur.execute("SELECT * FROM users WHERE username = %s", [username])
-
-        # If a user exists by that name
-        if result > 0:
-            # Get stored hash, searches query and looks at the first user
-            data = cur.fetchone()
-            # Search for the encrypted password
-            password = data['password']
-
-            # Close connection
-            cur.close()
-
-            # Compare passwords
-            if sha256_crypt.verify(password_candidate, password):
-                # Passwords matched - Successfull login
+        # Check if user exists in the database
+        if user is not None:
+            # Check if password exists
+            if sha256_crypt.verify(password_candidate, user.password):
+                # Passwords matched - Successful login
                 # Create session variables to be stored
                 session['logged_in'] = True
                 session['username'] = username
@@ -143,8 +109,6 @@ def login():
                 error = 'Invalid login'
                 return render_template('login.html', error=error)
         else:
-            # Close connection
-            cur.close()
 
             # No user found
             error = 'Username not found'
@@ -181,19 +145,11 @@ def logout():
 @app.route('/dashboard')
 @is_logged_in
 def dashboard():
-    # Create cursor
-    cur = mysql.connection.cursor()
+    # Get only the user's articles from the db
+    articles = Article.query.filter_by(author=session["username"]).all()
 
-    # Get only the user's articles from mysql
-    result = cur.execute("SELECT * FROM articles WHERE author = %s", [session["username"]])
-
-    articles = cur.fetchall()
-
-    # Close connection
-    cur.close()
-
-    # If there are articles in mysql
-    if result > 0:
+    # If the user has articles in the db
+    if articles is not None:
         return render_template('dashboard.html', articles=articles)
     else:
         msg = 'No Articles Found'
@@ -208,21 +164,14 @@ def add_article():
     form = ArticleForm(request.form)
 
     if request.method == 'POST' and form.validate():
-        title = form.title.data
-        body = form.body.data
+        # Create article entry from the form
+        article = Article(title=form.title.data,
+                          author=session['username'],
+                          body=form.body.data)
 
-        # Create cursor (handler for mysql)
-        cur = mysql.connection.cursor()
-
-        # Execute query (add form values to articles in db)
-        cur.execute("INSERT INTO articles(title, body, author) VALUES(%s, %s, %s)",
-                    (title, body, session['username']))
-
-        # Commit to DB
-        mysql.connection.commit()
-
-        # Close connection
-        cur.close()
+        # Add article to the database
+        db.session.add(article)
+        db.session.commit()
 
         flash('Article created', 'success')
         return redirect(url_for('dashboard'))
@@ -235,36 +184,24 @@ def add_article():
 @app.route('/edit_article/<string:id>', methods=['GET', 'POST'])
 @is_logged_in
 def edit_article(id):
-    # Create cursor
-    cur = mysql.connection.cursor()
 
-    # Get the article by id
-    cur.execute("SELECT * FROM articles WHERE id = %s", [id])
-
-    article = cur.fetchone()
+    # Get the article from the database
+    article = Article.query.filter_by(id=id).first()
 
     # Get form
     form = ArticleForm(request.form)
 
     # Populate article form fields
-    form.title.data = article['title']
-    form.body.data = article['body']
+    form.title.data = article.title
+    form.body.data = article.body
 
     if request.method == 'POST' and form.validate():
-        title = request.form['title']
-        body = request.form['body']
+        # set the article's fields to be the newly edited title and body
+        article.title = request.form['title']
+        article.body = request.form['body']
 
-        # Create cursor (handler for mysql)
-        cur = mysql.connection.cursor()
-
-        # Execute query (add form values to articles in db)
-        cur.execute("UPDATE articles SET title = %s, body = %s WHERE id = %s", (title, body, id))
-
-        # Commit to DB
-        mysql.connection.commit()
-
-        # Close connection
-        cur.close()
+        # Commit changes to the database
+        db.session.commit()
 
         flash('Article updated', 'success')
         return redirect(url_for('dashboard'))
@@ -277,17 +214,12 @@ def edit_article(id):
 @app.route('/delete_article/<string:id>', methods=['POST'])
 @is_logged_in
 def delete_article(id):
-    # Create cursor
-    cur = mysql.connection.cursor()
+    # Get specified article from the database
+    article = Article.query.filter_by(id=id).first()
 
-    # Delete article from articles
-    cur.execute("DELETE FROM articles WHERE id = %s", [id])
-
-    # Commit to DB
-    mysql.connection.commit()
-
-    # Close connection
-    cur.close()
+    # Delete the article
+    db.session.delete(article)
+    db.session.commit()
 
     flash('article deleted', 'success')
     return redirect(url_for('dashboard'))

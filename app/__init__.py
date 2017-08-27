@@ -1,21 +1,23 @@
 from flask import Flask
-from flask_mysqldb import MySQL
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 
+
+# TODO: allow user to reset password
+# TODO: create admin access
+# TODO: fix login form
+# TODO: set table names in models.py
 
 # Create instance of flask class
 app = Flask(__name__)
 
-from app import views
+# Get configuration settings
+app.config.from_object('config')
 
-# Config MySQL
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'password'  # MySQL root password
-app.config['MYSQL_DB'] = 'blogapp'
-app.config['MYSQL_CURSORCLASS'] = 'DictCursor'  # Return the database as a dict
+# Initialize db
+db = SQLAlchemy(app)
 
-# Config secret key
-app.secret_key = '123456'
+# Initialize migration
+migrate = Migrate(app, db)
 
-# Initialize MYSQL
-mysql = MySQL(app)
+from app import views, models
