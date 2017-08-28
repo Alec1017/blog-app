@@ -3,6 +3,8 @@ from app import db
 
 # Create a User table
 class User(db.Model):
+    __tablename__ = 'users'
+
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(100), index=True)
     email = db.Column(db.String(100), index=True, unique=True)
@@ -16,6 +18,8 @@ class User(db.Model):
 
 # Create Article table
 class Article(db.Model):
+    __tablename__ = 'articles'
+
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     title = db.Column(db.String(255))
     author = db.Column(db.String(100))
