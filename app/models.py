@@ -1,4 +1,5 @@
 from app import db
+from sqlalchemy.sql import expression
 
 
 # Create a User table
@@ -11,6 +12,7 @@ class User(db.Model):
     username = db.Column(db.String(30), index=True, unique=True)
     password = db.Column(db.String(100))
     register_date = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp())
+    is_admin = db.Column(db.Boolean, server_default=expression.false())
 
     def __repr__(self):
         return '<User %r>' % self.nickname
