@@ -1,0 +1,10 @@
+<!-- 403 error handler -->
+<!-- user will be redirected here attempting a forbidden request -->
+
+{% extends 'layout.html' %}
+
+{% block body %}
+    <h1>Forbidden</h1>
+    <p>What you were looking for isn't allowed.</p>
+    <p><a href="/" class="btn btn-primary btn-lg">Back to safety!</a></p>
+{% endblock %}

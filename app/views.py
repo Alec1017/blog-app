@@ -156,7 +156,7 @@ def dashboard():
     # Get current user
     user = User.query.filter_by(username=session['username']).first()
 
-    # Check if user is admin and redirect to admin dashboard if so
+    # Check if user is admin and redirect to admin dashboard
     if user.is_admin:
         return redirect(url_for('admin_dashboard'))
     else:
@@ -269,3 +269,15 @@ def admin_dashboard():
 
     # Display all the articles that users have created
     return render_template('dashboard.html', articles=articles)
+
+
+# 404 page not found error handler
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+
+# 403 forbidden error handler
+@app.errorhandler(403)
+def forbidden(e):
+    return render_template('403.html'), 403

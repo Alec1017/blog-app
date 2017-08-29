@@ -1,7 +1,7 @@
 from wtforms import Form, StringField, TextAreaField, PasswordField, validators
 
 
-# A form for a user to register in the app
+# A form for a user to register
 # Uses validators to specify required data
 class RegisterForm(Form):
     # Name field
