@@ -1,4 +1,4 @@
-from flask import flash, redirect, url_for, session, request, render_template
+from flask import flash, redirect, url_for, session, request, render_template, abort
 from .forms import RegisterForm, ArticleForm
 from passlib.hash import sha256_crypt
 from functools import wraps
@@ -104,7 +104,12 @@ def login():
                 session['username'] = username
 
                 flash('You are now logged in', 'success')
-                return redirect(url_for('dashboard'))
+
+                # Check if the user is an admin
+                if user.is_admin:
+                    return redirect(url_for('admin_dashboard'))
+                else:
+                    return redirect(url_for('dashboard'))
             else:
                 error = 'Invalid login'
                 return render_template('login.html', error=error)
@@ -148,12 +153,19 @@ def dashboard():
     # Get only the user's articles from the db
     articles = Article.query.filter_by(author=session["username"]).all()
 
-    # If the user has articles in the db
-    if articles is not None:
-        return render_template('dashboard.html', articles=articles)
+    # Get current user
+    user = User.query.filter_by(username=session['username']).first()
+
+    # Check if user is admin and redirect to admin dashboard if so
+    if user.is_admin:
+        return redirect(url_for('admin_dashboard'))
     else:
-        msg = 'No Articles Found'
-        return render_template('dashboard.html', msg=msg)
+        # If the user has articles in the db
+        if articles is not None:
+            return render_template('dashboard.html', articles=articles)
+        else:
+            msg = 'No Articles Found'
+            return render_template('dashboard.html', msg=msg)
 
 
 # Add an article
@@ -203,8 +215,16 @@ def edit_article(id):
         # Commit changes to the database
         db.session.commit()
 
+        # Get current user
+        user = User.query.filter_by(username=session['username']).first()
+
         flash('Article updated', 'success')
-        return redirect(url_for('dashboard'))
+
+        # Redirect to admin dashboard if the user is admin
+        if user.is_admin:
+            return redirect(url_for('admin_dashboard'))
+        else:
+            return redirect(url_for('dashboard'))
 
     # If something isn't entered correctly, reload the page
     return render_template('edit_article.html', form=form)
@@ -221,5 +241,31 @@ def delete_article(id):
     db.session.delete(article)
     db.session.commit()
 
+    # Get current user
+    user = User.query.filter_by(username=session['username']).first()
+
     flash('article deleted', 'success')
-    return redirect(url_for('dashboard'))
+
+    # Redirect to admin dashboard if the user is admin
+    if user.is_admin:
+        return redirect(url_for('admin_dashboard'))
+    else:
+        return redirect(url_for('dashboard'))
+
+
+# Admin dashboard view
+@app.route('/admin/dashboard')
+@is_logged_in
+def admin_dashboard():
+    # Get a potentional admin
+    admin = User.query.filter_by(username=session["username"], is_admin=True).first()
+
+    # If the logged in user is not an admin
+    if admin is None:
+        abort(403)
+
+    # Get all the created articles
+    articles = Article.query.all()
+
+    # Display all the articles that users have created
+    return render_template('dashboard.html', articles=articles)

@@ -3,11 +3,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 
 
-# TODO: allow user to reset password
-# TODO: create admin access
-# TODO: fix login form
-# TODO: set table names in models.py
-
 # Create instance of flask class
 app = Flask(__name__)
 

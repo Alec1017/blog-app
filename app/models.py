@@ -15,7 +15,7 @@ class User(db.Model):
     is_admin = db.Column(db.Boolean, server_default=expression.false())
 
     def __repr__(self):
-        return '<User %r>' % self.nickname
+        return '<User %r>' % self.username
 
 
 # Create Article table
@@ -29,4 +29,4 @@ class Article(db.Model):
     create_date = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp())
 
     def __repr__(self):
-        return '<Article %r>' % self.nickname
+        return '<Article %r>' % self.username
