@@ -1,0 +1,12 @@
+<!-- 500 error handler -->
+<!-- user will be redirected here after an internal error occurs -->
+
+{% extends 'layout.html' %}
+
+{% block body %}
+    <div class="jumbotron text-center">
+        <h1>500 Error</h1>
+        <p>The server encountered an internal error. That's all we know.</p>
+        <p><a href="/" class="btn btn-primary btn-lg">Back to safety!</a></p>
+    </div>
+{% endblock %}

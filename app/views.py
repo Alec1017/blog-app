@@ -43,8 +43,7 @@ def get_article(id):
     if article is not None:
         return render_template('article.html', article=article)
     else:
-        msg = 'No Article by that ID'
-        return render_template('articles.html', msg=msg)
+        abort(404)
 
 
 # This a POST request to submit a register form
@@ -281,3 +280,9 @@ def page_not_found(e):
 @app.errorhandler(403)
 def forbidden(e):
     return render_template('403.html'), 403
+
+
+# 500 internal error handler
+@app.errorhandler(500)
+def internal_error(e):
+    return render_template('500.html'), 500
