@@ -230,7 +230,7 @@ def edit_article(id):
 
 
 # Delete article
-@app.route('/delete_article/<string:id>', methods=['POST'])
+@app.route('/delete_article/<string:id>', methods=['GET', 'POST'])
 @is_logged_in
 def delete_article(id):
     # Get specified article from the database
@@ -270,16 +270,16 @@ def admin_dashboard():
     return render_template('dashboard.html', articles=articles)
 
 
-# 404 page not found error handler
-@app.errorhandler(404)
-def page_not_found(e):
-    return render_template('404.html'), 404
-
-
 # 403 forbidden error handler
 @app.errorhandler(403)
 def forbidden(e):
     return render_template('403.html'), 403
+
+
+# 404 page not found error handler
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
 
 
 # 500 internal error handler
