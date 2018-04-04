@@ -1,10 +1,10 @@
 from flask import flash, redirect, url_for, session, request, render_template, abort
-from .forms import RegisterForm, ArticleForm
 from passlib.hash import sha256_crypt
 from functools import wraps
 
 from app import app, db
 from .models import User, Article
+from .forms import RegisterForm, ArticleForm
 
 
 # Renders the home page
@@ -107,8 +107,8 @@ def login():
                 # Check if the user is an admin
                 if user.is_admin:
                     return redirect(url_for('admin_dashboard'))
-                else:
-                    return redirect(url_for('dashboard'))
+
+                return redirect(url_for('dashboard'))
             else:
                 error = 'Invalid login'
                 return render_template('login.html', error=error)

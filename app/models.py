@@ -1,5 +1,6 @@
-from app import db
 from sqlalchemy.sql import expression
+
+from app import db
 
 
 # Create a User table

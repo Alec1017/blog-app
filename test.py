@@ -1,6 +1,7 @@
 import unittest
 from flask import Flask, abort
 from flask_testing import TestCase
+
 from app import app, db
 from app.models import User, Article
 
