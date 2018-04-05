@@ -7,19 +7,28 @@ from .models import User, Article
 from .forms import RegisterForm, ArticleForm
 
 
-# Renders the home page
+# Decorator to check if user is logged in
+def is_logged_in(f):
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        if 'logged_in' in session:
+            return f(*args, **kwargs)
+        else:
+            flash('Please login', 'danger')
+            return redirect(url_for('login'))
+    return wrap
+
+
 @app.route('/')
 def index():
     return render_template('home.html')
 
 
-# Renders the about page
 @app.route('/about')
 def about():
     return render_template('about.html')
 
 
-# Renders the articles page
 @app.route('/articles')
 def articles():
     # Get all articles from the db
@@ -119,18 +128,6 @@ def login():
             return render_template('login.html', error=error)
 
     return render_template('login.html')
-
-
-# Decorator to check if user is logged in
-def is_logged_in(f):
-    @wraps(f)
-    def wrap(*args, **kwargs):
-        if 'logged_in' in session:
-            return f(*args, **kwargs)
-        else:
-            flash('Please login', 'danger')
-            return redirect(url_for('login'))
-    return wrap
 
 
 # Logout the user
